@@ -1,0 +1,120 @@
+﻿@{
+    ViewData["Title"] = "Register";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        .register-container {
+            background: white;
+            padding: 20px;
+            width: 350px;
+            margin: auto;
+            box-shadow: 0px 0px 10px 0px #ccc;
+            border-radius: 8px;
+        }
+
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+        }
+
+            button:hover {
+                background-color: #218838;
+            }
+
+        .links {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="register-container">
+        <h2>Register</h2>
+        <form id="registerForm">
+            <input type="text" id="firstName" placeholder="First Name" required />
+            <input type="text" id="lastName" placeholder="Last Name" required />
+            <input type="email" id="email" placeholder="Email" required />
+            <input type="password" id="password" placeholder="Password" required />
+            <input type="password" id="confirmPassword" placeholder="Confirm Password" required />
+            <select id="userRole">
+                <option value="User">User</option>
+                <option value="Admin">Admin</option>
+            </select>
+            <button type="submit">Register</button>
+        </form>
+        <div class="links">
+            <a href="/Account/Login">Already have an account? Login</a>
+        </div>
+        <p id="errorMessage" style="color: red; display: none;"></p>
+        <p id="successMessage" style="color: green; display: none;"></p>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            $("#registerForm").submit(function (e) {
+                e.preventDefault(); // Prevent default form submission
+
+                var password = $("#password").val();
+                var confirmPassword = $("#confirmPassword").val();
+                if (password !== confirmPassword) {
+                    $("#errorMessage").text("Passwords do not match!").show();
+                    return;
+                }
+
+              
+                var registerData = {
+                    FirstName: $("#firstName").val(),
+                    LastName: $("#lastName").val(),
+                    Email: $("#email").val(),
+                    PasswordHash: password,
+                    Role: $("#userRole").val()
+                };
+
+                console.log(registerData);
+
+                $.ajax({
+                    url: "/Account/Register",
+                    //url: "https://localhost:44362/Auth/register",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify(registerData),
+                    success: function (response) {
+                        $("#successMessage").text("Registration Successful! Redirecting to login...").show();
+                        setTimeout(function () {
+                            window.location.href = "/Account/Login";
+                        }, 2000);
+                    },
+                    error: function (xhr) {
+                        $("#errorMessage").text("Registration Failed: " + xhr.responseText).show();
+                    }
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>
+
