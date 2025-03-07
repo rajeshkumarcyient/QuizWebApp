@@ -77,15 +77,12 @@
 
                 $.ajax({
                     url: "/Account/Login",
-                    //url: "https://localhost:44362/Auth/login",  // API endpoint
                     type: "POST",
                     contentType: "application/json",
                     data: JSON.stringify(loginData),
                     success: function (response) { 
                         if (response.success) {
-                            //localStorage.setItem("jwtToken", response.token);
-                            alert("Login Successful!");
-                            window.location.href = "/Admin/Dashboard"; // Redirect manually
+                            window.location.href = response.redirectUrl;
                         } else {
                             $("#errorMessage").text("Login Failed: " + response.message).show();
                         }

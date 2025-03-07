@@ -1,16 +1,21 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using QuizAppWeb.Models;
 using QuizAppWeb.Service;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace QuizAppWeb.Controllers
 {
     public class AccountController : Controller
     {
         private readonly IUserService _userService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public AccountController(IUserService userService)
+        public AccountController(IUserService userService, IHttpContextAccessor httpContextAccessor)
         {
             _userService = userService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public IActionResult Login() => View();
@@ -20,19 +25,33 @@ namespace QuizAppWeb.Controllers
         
 
         [HttpPost]
-        public async Task<IActionResult> Login([FromBody]LoginModel loginModel)
+        public async Task<IActionResult> Login([FromBody] LoginModel loginModel)
         {
             bool isSuccess = await _userService.LoginAsync(loginModel);
             if (isSuccess)
             {
-                //Get the token from API and put here.
-                var token = "sample-jwt-token";
-
-                return Json(new { success = true, token });
+                var token = _httpContextAccessor.HttpContext?.Session.GetString("AuthToken");
+        
+                string userRole = GetUserRoleFromToken(token); 
+                string redirectUrl = userRole == "Admin" ? "/Admin/Dashboard" : "/Home/Attempt";
+        
+                return Json(new { success = true, redirectUrl });
             }
 
-            ModelState.AddModelError("", "Invalid login credentials.");
             return BadRequest(new { success = false, message = "Invalid login credentials." });
+        }
+
+        public string GetUserRoleFromToken(string token)
+        {
+            if (string.IsNullOrEmpty(token))
+                return null;
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var jwtToken = tokenHandler.ReadJwtToken(token);
+
+            var roleClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "role" || c.Type == ClaimTypes.Role);
+
+            return roleClaim?.Value;
         }
 
         [HttpPost]

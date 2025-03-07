@@ -18,6 +18,11 @@ namespace QuizAppWeb.Controllers
             return View();
         }
 
+        public IActionResult Attempt()
+        {
+            return View("~/Views/Shared/Quiz/Attempt.cshtml");
+        }
+
         public IActionResult Privacy()
         {
             return View();

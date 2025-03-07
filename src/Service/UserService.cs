@@ -1,4 +1,5 @@
-﻿using QuizAppWeb.Models;
+﻿using Microsoft.AspNetCore.Http;
+using QuizAppWeb.Models;
 using QuizAppWeb.Service;
 
 namespace QuizAppWeb.Service
@@ -7,12 +8,14 @@ namespace QuizAppWeb.Service
     {
         private readonly HttpClient _httpClient;
         private readonly ILogger<UserService> _logger;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private const string BaseUrl = "https://localhost:44362/Auth";
 
-        public UserService(IHttpClientFactory httpClientFactory, ILogger<UserService> logger)
+        public UserService(IHttpClientFactory httpClientFactory, ILogger<UserService> logger, IHttpContextAccessor httpContextAccessor)
         {
             _httpClient = httpClientFactory.CreateClient();
             _logger = logger;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<bool> RegisterUserAsync(UserModel userModel)
@@ -42,7 +45,14 @@ namespace QuizAppWeb.Service
                 var response = await _httpClient.PostAsJsonAsync($"{BaseUrl}/login", loginModel);
                 if (response.IsSuccessStatusCode)
                 {
-                    return true;
+                     var result = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                     var token = result?["token"];
+
+                     if (!string.IsNullOrEmpty(token))
+                     {
+                         _httpContextAccessor.HttpContext?.Session.SetString("AuthToken", token);
+                         return true;
+                     }
                 }
 
                 _logger.LogWarning("Login failed. Status Code: {StatusCode}", response.StatusCode);
