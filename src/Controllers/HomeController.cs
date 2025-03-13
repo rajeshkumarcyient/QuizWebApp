@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuizAppWeb.Models;
 using System.Diagnostics;
@@ -18,8 +19,10 @@ namespace QuizAppWeb.Controllers
             return View();
         }
 
+        [Authorize(Roles = "User")]
         public IActionResult Attempt()
         {
+            _logger.Log(LogLevel.Information, "User landed in Quiz Attempt page");
             return View("~/Views/Shared/Quiz/Attempt.cshtml");
         }
 

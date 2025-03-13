@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json;
 using QuizAppWeb.Models;
 using QuizAppWeb.ViewModel;
 using System.IdentityModel.Tokens.Jwt;
@@ -31,7 +32,7 @@ namespace QuizAppWeb.Service
                     Title = quizViewModel.Title,
                     Description = quizViewModel.Description,
                     DurationMinutes = quizViewModel.DurationMinutes,
-                    CreatedAt = DateTime.UtcNow,
+                    CreatedAt = DateTime.UtcNow
                 };                
 
                 var token = _httpContextAccessor.HttpContext?.Session.GetString("AuthToken");
@@ -55,7 +56,114 @@ namespace QuizAppWeb.Service
             }
         }
 
-        public int? GetUserIdFromToken(string token)
+        public async Task<List<Quiz>> GetAllQuizzesAsync()
+        {
+            var token = _httpContextAccessor.HttpContext?.Session.GetString("AuthToken");
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            var response = await _httpClient.GetAsync($"{BaseUrl}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+
+                var settings = new JsonSerializerSettings
+                {
+                    ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver()
+                };
+
+                return JsonConvert.DeserializeObject<List<Quiz>>(json, settings);
+            }
+
+            return [];
+        }
+
+        public async Task<QuizViewModel> GetQuizById(int quizId)
+        {
+            try
+            {
+                var token = _httpContextAccessor.HttpContext?.Session.GetString("AuthToken");
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                var response = await _httpClient.GetAsync($"{BaseUrl}/{quizId}");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    var quiz = JsonConvert.DeserializeObject<QuizViewModel>(content);
+                    return quiz;
+                }
+
+                _logger.LogWarning("Get Quiz failed with: {StatusCode}", response.StatusCode);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while retrieving quiz.");
+                return null;
+            }
+        }
+
+        public async Task<HttpStatusCode> UpdateQuiz(QuizViewModel quizViewModel)
+        {
+            try
+            {
+                var quizDto = new QuizDto
+                {
+                    QuizId = quizViewModel.QuizId,
+                    Title = quizViewModel.Title,
+                    Description = quizViewModel.Description,
+                    DurationMinutes = quizViewModel.DurationMinutes,
+                    CreatedAt = quizViewModel.CreatedAt,
+                    CreatedBy = quizViewModel.CreatedBy
+                };
+
+                var token = _httpContextAccessor.HttpContext?.Session.GetString("AuthToken");
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                var response = await _httpClient.PutAsJsonAsync($"{BaseUrl}/{quizDto.QuizId}", quizDto);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return response.StatusCode;
+                }
+
+                _logger.LogWarning("Update Quiz failed with: {StatusCode}", response.StatusCode);
+                return HttpStatusCode.BadRequest;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while updating quiz.");
+                return HttpStatusCode.BadRequest;
+            }
+        }
+
+        public async Task<HttpStatusCode> DeleteQuiz(int quizId)
+        {
+            try
+            {
+                var token = _httpContextAccessor.HttpContext?.Session.GetString("AuthToken");
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                var response = await _httpClient.DeleteAsync($"{BaseUrl}/{quizId}");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return response.StatusCode;
+                }
+
+                _logger.LogWarning("Delete Quiz failed with: {StatusCode}", response.StatusCode);
+                return HttpStatusCode.BadRequest;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while deleting quiz.");
+                return HttpStatusCode.BadRequest;
+            }
+        }
+
+
+        private int? GetUserIdFromToken(string token)
         {
             if (string.IsNullOrEmpty(token))
                 return null;

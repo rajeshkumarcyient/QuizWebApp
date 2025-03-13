@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
 using QuizAppWeb.Service;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,6 +18,15 @@ builder.Services.AddHttpClient<IUserService, UserService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IQuizService, QuizService>();
 
+builder.Services.AddAuthorization();
+
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Account/Login"; 
+        options.AccessDeniedPath = "/Account/AccessDenied";
+    });
+
 
 var app = builder.Build();
 
@@ -34,6 +44,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(
